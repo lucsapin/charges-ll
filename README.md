@@ -28,7 +28,7 @@ Le reste à vivre est identique pour les deux : `(A + B − T) / 2`.
 
 ## Utilisation
 
-1. Ouvrir la page et saisir les charges une première fois (ou importer un lien de partage).
+1. Ouvrir [cette page](https://lucsapin.github.io/charges-ll/) et saisir les charges manuellement ou via un import.
 2. Chaque mois, saisir les deux salaires.
 3. Lire les montants à virer sur le compte commun.
 
