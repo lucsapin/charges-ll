@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Compte commun</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #eef1f4;
+  --surface: #ffffff;
+  --ink: #1b2430;
+  --muted: #5d6877;
+  --line: #d9dee5;
+  --luc: #2f5d9e;
+  --laura: #a23b72;
+  --warn: #b4531a;
+  --focus: #2f5d9e;
+  --display: "Bricolage Grotesque", "Avenir Next", "Helvetica Neue", Arial, sans-serif;
+  --body: "DM Sans", -apple-system, "Helvetica Neue", Arial, sans-serif;
+  color-scheme: light;
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #12171e; --surface: #1b222b; --ink: #e8edf3; --muted: #9aa5b4;
+    --line: #2d3744; --luc: #86aee8; --laura: #ec96c4; --warn: #f0a06a; --focus: #86aee8;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #12171e; --surface: #1b222b; --ink: #e8edf3; --muted: #9aa5b4;
+  --line: #2d3744; --luc: #86aee8; --laura: #ec96c4; --warn: #f0a06a; --focus: #86aee8;
+  color-scheme: dark;
+}
+html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+*, *::before, *::after { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font-family: var(--body); font-size: 16px; line-height: 1.45;
+  -webkit-text-size-adjust: 100%;
+}
+main { max-width: 520px; margin: 0 auto; padding: 20px 16px 40px; }
+h1 { font-family: var(--display); font-weight: 700; font-size: 26px; margin: 4px 0 18px; letter-spacing: -0.01em; }
+h2 { font-family: var(--display); font-weight: 500; font-size: 18px; margin: 0 0 12px; }
+section { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; margin-bottom: 14px; }
+label, .lbl { display: block; font-size: 14px; color: var(--muted); margin-bottom: 4px; }
+input {
+  width: 100%; font: inherit; color: var(--ink); background: transparent;
+  border: 1px solid var(--line); border-radius: 10px; padding: 11px 12px; min-height: 44px;
+  font-variant-numeric: tabular-nums;
+}
+input:focus-visible, button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+input::placeholder { color: var(--muted); opacity: .7; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.field-note { font-size: 13px; color: var(--muted); margin: 10px 0 0; }
+
+/* Résultat */
+.result { padding: 0; overflow: hidden; }
+.result .head { padding: 16px 16px 4px; }
+.shares { display: grid; grid-template-columns: 1fr 1fr; }
+.share { padding: 8px 16px 16px; }
+.share + .share { border-left: 1px solid var(--line); }
+.share .who { font-weight: 600; font-size: 15px; }
+.share .amt { font-family: var(--display); font-weight: 700; font-size: clamp(26px, 8.6vw, 36px); line-height: 1.1; margin: 4px 0 2px; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+.share .sub { font-size: 13px; color: var(--muted); }
+.luc .who, .luc .amt { color: var(--luc); }
+.laura .who, .laura .amt { color: var(--laura); }
+.foot { border-top: 1px solid var(--line); padding: 12px 16px; font-size: 14px; color: var(--muted); display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.foot b { color: var(--ink); font-variant-numeric: tabular-nums; }
+.empty { padding: 4px 16px 16px; color: var(--muted); }
+.warn { padding: 0 16px 14px; color: var(--warn); font-size: 14px; }
+
+/* Charges */
+.row { display: grid; grid-template-columns: 1fr 112px 40px; gap: 8px; align-items: start; margin-bottom: 8px; }
+.row .calc { grid-column: 2 / 3; font-size: 12.5px; color: var(--muted); margin: -4px 0 0 4px; font-variant-numeric: tabular-nums; }
+.row.bad input.amt-in { border-color: var(--warn); }
+.del { min-height: 44px; border: 1px solid var(--line); background: transparent; color: var(--muted); border-radius: 10px; font-size: 20px; line-height: 1; cursor: pointer; }
+.total { display: flex; justify-content: space-between; padding-top: 12px; margin-top: 6px; border-top: 1px solid var(--line); font-weight: 600; font-variant-numeric: tabular-nums; }
+.btns { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+.btn { font: inherit; font-weight: 500; min-height: 44px; padding: 0 16px; border-radius: 10px; border: 1px solid var(--line); background: transparent; color: var(--ink); cursor: pointer; }
+.btn.primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.small { font-size: 13px; color: var(--muted); text-align: center; margin: 18px 8px 0; }
+details summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; font-family: var(--display); font-weight: 500; font-size: 18px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>Compte commun</h1>
+
+  <section aria-labelledby="h-sal">
+    <h2 id="h-sal">Ce mois-ci</h2>
+    <div class="grid2">
+      <div>
+        <label for="luc">Salaire de Luc</label>
+        <input id="luc" inputmode="decimal" autocomplete="off" placeholder="0,00">
+      </div>
+      <div>
+        <label for="laura">Salaire de Laura</label>
+        <input id="laura" inputmode="decimal" autocomplete="off" placeholder="0,00">
+      </div>
+    </div>
+    <div style="margin-top:12px">
+      <label for="marge">Marge au-dessus des charges</label>
+      <input id="marge" inputmode="decimal" autocomplete="off" placeholder="1400">
+    </div>
+    <p class="field-note">La marge sert aux dépenses variables : courses, essence, imprévus.</p>
+  </section>
+
+  <section class="result" aria-live="polite" aria-labelledby="h-res">
+    <div class="head"><h2 id="h-res">À virer sur le compte commun</h2></div>
+    <div id="resBody"></div>
+  </section>
+
+  <section>
+    <details id="chargesBox" open>
+      <summary>Charges fixes</summary>
+      <div id="rows" style="margin-top:8px"></div>
+      <div class="total"><span>Total</span><span id="total">0,00 €</span></div>
+      <div class="btns">
+        <button class="btn primary" id="add" type="button">Ajouter une charge</button>
+        <button class="btn" id="reset" type="button">Rétablir la liste d’origine</button>
+      </div>
+      <p class="field-note">Dans un montant, vous pouvez écrire une somme, par exemple 21+7,90.</p>
+    </details>
+  </section>
+
+  <p class="small" id="saveNote">Les réglages sont enregistrés sur cet appareil.</p>
+</main>
+
+<script>
+(function () {
+  var KEY = "compte-commun-v1";
+  var DEFAULTS = [
+    ["Oh my baby (59 € tous les 2 mois)", "59"],
+    ["Virement Lily", "50"],
+    ["MAM", "858,48"],
+    ["Petits culottés", "71,19+49,50"],
+    ["Prêt", "970,98+169,60"],
+    ["Assurance auto", "47,99"],
+    ["Assurance habitation", "35,01"],
+    ["EDF", "44,40"],
+    ["Ménage", "21+7,90"],
+    ["Taxe foncière", "154"],
+    ["Bouygues", "28,99+7,29+7,29"],
+    ["YouTube", "25,99"],
+    ["Charges", "250"],
+    ["Netflix", "8"]
+  ];
+  function defaultCharges() {
+    return DEFAULTS.map(function (d, i) { return { id: i + 1, label: d[0], expr: d[1] }; });
+  }
+  var state = { luc: "", laura: "", marge: "1400", charges: defaultCharges(), next: 100 };
+  var storageOk = true;
+
+  try {
+    var raw = localStorage.getItem(KEY);
+    if (raw) {
+      var p = JSON.parse(raw);
+      if (p && Array.isArray(p.charges)) {
+        state = {
+          luc: String(p.luc || ""), laura: String(p.laura || ""),
+          marge: p.marge == null ? "1400" : String(p.marge),
+          charges: p.charges, next: p.next || 1000
+        };
+      }
+    }
+  } catch (e) { storageOk = false; }
+
+  function save() {
+    try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { storageOk = false; }
+    if (!storageOk) {
+      document.getElementById("saveNote").textContent = "Les réglages ne sont pas enregistrés sur cet appareil.";
+    }
+  }
+
+  var fmt = new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" });
+  function money(n) { return fmt.format(n); }
+
+  // Accepte « 21+7,90 », « =59 », « 12,5 ». Renvoie NaN si illisible, 0 si vide.
+  function parseExpr(s) {
+    s = String(s == null ? "" : s).replace(/\s/g, "").replace(/^=/, "").replace(/,/g, ".");
+    if (s === "") return 0;
+    if (!/^[+-]?\d*\.?\d+([+-]\d*\.?\d+)*$/.test(s)) return NaN;
+    return s.match(/[+-]?\d*\.?\d+/g).reduce(function (a, b) { return a + parseFloat(b); }, 0);
+  }
+  function filled(s) { return String(s).replace(/\s/g, "") !== ""; }
+
+  var $ = function (id) { return document.getElementById(id); };
+  var elLuc = $("luc"), elLaura = $("laura"), elMarge = $("marge");
+  elLuc.value = state.luc; elLaura.value = state.laura; elMarge.value = state.marge;
+
+  function totalCharges() {
+    return state.charges.reduce(function (sum, c) {
+      var v = parseExpr(c.expr);
+      return sum + (isNaN(v) ? 0 : v);
+    }, 0);
+  }
+
+  function renderResult() {
+    var body = $("resBody");
+    var C = totalCharges();
+    var m = parseExpr(state.marge);
+    var A = parseExpr(state.luc), B = parseExpr(state.laura);
+    var marge = isNaN(m) ? 0 : m;
+    var cible = C + marge;
+    $("total").textContent = money(C);
+
+    if (!filled(state.luc) || !filled(state.laura) || isNaN(A) || isNaN(B)) {
+      body.innerHTML = '<p class="empty">Saisissez les deux salaires pour voir la répartition. Total à réunir sur le compte : <b>' + money(cible) + '</b>.</p>';
+      return;
+    }
+    var luc = (cible + A - B) / 2;
+    var laura = cible - luc;
+    var reste = A - luc;
+    var html = '<div class="shares">' +
+      '<div class="share luc"><div class="who">Luc</div><div class="amt">' + money(luc) + '</div><div class="sub">reste ' + money(A - luc) + '</div></div>' +
+      '<div class="share laura"><div class="who">Laura</div><div class="amt">' + money(laura) + '</div><div class="sub">reste ' + money(B - laura) + '</div></div>' +
+      '</div>';
+    if (luc < 0 || laura < 0) {
+      html += '<p class="warn">Un des deux montants est négatif : l’écart de salaire est supérieur au total à réunir.</p>';
+    }
+    html += '<div class="foot"><span>Total sur le compte : <b>' + money(cible) + '</b></span><span>Reste à vivre chacun : <b>' + money(reste) + '</b></span></div>';
+    body.innerHTML = html;
+  }
+
+  function calcText(c) {
+    var v = parseExpr(c.expr);
+    if (isNaN(v)) return "Montant illisible";
+    if (/[+-]/.test(String(c.expr).replace(/^[=\s]*[+-]/, ""))) return "= " + money(v);
+    return "";
+  }
+
+  function renderRows() {
+    var host = $("rows");
+    host.innerHTML = "";
+    state.charges.forEach(function (c) {
+      var row = document.createElement("div");
+      row.className = "row";
+      row.dataset.id = c.id;
+
+      var l = document.createElement("input");
+      l.value = c.label; l.setAttribute("aria-label", "Libellé"); l.placeholder = "Libellé";
+      l.addEventListener("input", function () { c.label = l.value; save(); });
+
+      var a = document.createElement("input");
+      a.className = "amt-in"; a.value = c.expr; a.setAttribute("aria-label", "Montant de " + (c.label || "la charge"));
+      a.placeholder = "0,00"; a.setAttribute("autocomplete", "off"); a.inputMode = "text";
+      var note = document.createElement("div");
+      note.className = "calc";
+      note.textContent = calcText(c);
+      row.classList.toggle("bad", isNaN(parseExpr(c.expr)));
+      a.addEventListener("input", function () {
+        c.expr = a.value;
+        note.textContent = calcText(c);
+        row.classList.toggle("bad", isNaN(parseExpr(c.expr)));
+        save(); renderResult();
+      });
+
+      var d = document.createElement("button");
+      d.type = "button"; d.className = "del"; d.textContent = "×";
+      d.setAttribute("aria-label", "Supprimer " + (c.label || "la charge"));
+      d.addEventListener("click", function () {
+        state.charges = state.charges.filter(function (x) { return x.id !== c.id; });
+        save(); renderRows(); renderResult();
+      });
+
+      row.appendChild(l); row.appendChild(a); row.appendChild(d); row.appendChild(note);
+      host.appendChild(row);
+    });
+  }
+
+  elLuc.addEventListener("input", function () { state.luc = elLuc.value; save(); renderResult(); });
+  elLaura.addEventListener("input", function () { state.laura = elLaura.value; save(); renderResult(); });
+  elMarge.addEventListener("input", function () { state.marge = elMarge.value; save(); renderResult(); });
+
+  $("add").addEventListener("click", function () {
+    state.charges.push({ id: state.next++, label: "", expr: "" });
+    save(); renderRows(); renderResult();
+    var last = $("rows").lastElementChild;
+    if (last) last.querySelector("input").focus();
+  });
+
+  var resetBtn = $("reset"), resetTimer = null;
+  resetBtn.addEventListener("click", function () {
+    if (resetBtn.dataset.armed !== "1") {
+      resetBtn.dataset.armed = "1";
+      resetBtn.textContent = "Confirmer le rétablissement";
+      resetTimer = setTimeout(disarm, 4000);
+      return;
+    }
+    disarm();
+    state.charges = defaultCharges(); state.next = 100;
+    save(); renderRows(); renderResult();
+  });
+  function disarm() {
+    clearTimeout(resetTimer);
+    resetBtn.dataset.armed = "0";
+    resetBtn.textContent = "Rétablir la liste d’origine";
+  }
+
+  renderRows();
+  renderResult();
+})();
+</script>
+</body>
+</html>
