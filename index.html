@@ -3,6 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Compte commun">
 <title>Compte commun</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -86,12 +88,20 @@ input::placeholder { color: var(--muted); opacity: .7; }
 .btn.primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
 .small { font-size: 13px; color: var(--muted); text-align: center; margin: 18px 8px 0; }
 details summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; font-family: var(--display); font-weight: 500; font-size: 18px; }
+.banner { background: var(--surface); border: 1px solid var(--luc); border-radius: 14px; padding: 14px 16px; margin-bottom: 14px; }
+.banner p { margin: 0 0 10px; }
+.banner .btns { margin-top: 0; }
+.linkbox { margin-top: 10px; }
+.status { font-size: 13px; color: var(--muted); margin: 8px 0 0; min-height: 1.2em; }
+.emptyrows { color: var(--muted); margin: 4px 0 8px; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 </style>
 </head>
 <body>
 <main>
   <h1>Compte commun</h1>
+
+  <div id="importBanner" class="banner" hidden></div>
 
   <section aria-labelledby="h-sal">
     <h2 id="h-sal">Ce mois-ci</h2>
@@ -107,7 +117,7 @@ details summary { cursor: pointer; min-height: 44px; display: flex; align-items:
     </div>
     <div style="margin-top:12px">
       <label for="marge">Marge au-dessus des charges</label>
-      <input id="marge" inputmode="decimal" autocomplete="off" placeholder="1400">
+      <input id="marge" inputmode="decimal" autocomplete="off" placeholder="0">
     </div>
     <p class="field-note">La marge sert aux dépenses variables : courses, essence, imprévus.</p>
   </section>
@@ -124,9 +134,28 @@ details summary { cursor: pointer; min-height: 44px; display: flex; align-items:
       <div class="total"><span>Total</span><span id="total">0,00 €</span></div>
       <div class="btns">
         <button class="btn primary" id="add" type="button">Ajouter une charge</button>
-        <button class="btn" id="reset" type="button">Rétablir la liste d’origine</button>
+        <button class="btn" id="reset" type="button">Tout effacer</button>
       </div>
       <p class="field-note">Dans un montant, vous pouvez écrire une somme, par exemple 21+7,90.</p>
+    </details>
+  </section>
+
+  <section>
+    <details id="shareBox">
+      <summary>Partager ou importer la configuration</summary>
+      <p class="field-note" style="margin-top:4px">Le lien contient les charges et la marge, pas les salaires. Il ne passe par aucun serveur : envoyez-le par message.</p>
+      <div class="btns" style="margin-top:10px"><button class="btn primary" id="share" type="button">Créer le lien de partage</button></div>
+      <div class="linkbox" id="linkWrap" hidden>
+        <label for="linkOut">Lien à envoyer</label>
+        <input id="linkOut" readonly>
+      </div>
+      <p class="status" id="shareStatus" aria-live="polite"></p>
+      <div class="linkbox">
+        <label for="linkIn">Coller un lien ou un code reçu</label>
+        <input id="linkIn" autocomplete="off" placeholder="https://…#c=…">
+      </div>
+      <div class="btns"><button class="btn" id="doImport" type="button">Importer</button></div>
+      <p class="status" id="importStatus" aria-live="polite"></p>
     </details>
   </section>
 
@@ -136,26 +165,8 @@ details summary { cursor: pointer; min-height: 44px; display: flex; align-items:
 <script>
 (function () {
   var KEY = "compte-commun-v1";
-  var DEFAULTS = [
-    ["Oh my baby (59 € tous les 2 mois)", "59"],
-    ["Virement Lily", "50"],
-    ["MAM", "858,48"],
-    ["Petits culottés", "71,19+49,50"],
-    ["Prêt", "970,98+169,60"],
-    ["Assurance auto", "47,99"],
-    ["Assurance habitation", "35,01"],
-    ["EDF", "44,40"],
-    ["Ménage", "21+7,90"],
-    ["Taxe foncière", "154"],
-    ["Bouygues", "28,99+7,29+7,29"],
-    ["YouTube", "25,99"],
-    ["Charges", "250"],
-    ["Netflix", "8"]
-  ];
-  function defaultCharges() {
-    return DEFAULTS.map(function (d, i) { return { id: i + 1, label: d[0], expr: d[1] }; });
-  }
-  var state = { luc: "", laura: "", marge: "1400", charges: defaultCharges(), next: 100 };
+  function defaultCharges() { return []; }
+  var state = { luc: "", laura: "", marge: "", charges: defaultCharges(), next: 100 };
   var storageOk = true;
 
   try {
@@ -165,7 +176,7 @@ details summary { cursor: pointer; min-height: 44px; display: flex; align-items:
       if (p && Array.isArray(p.charges)) {
         state = {
           luc: String(p.luc || ""), laura: String(p.laura || ""),
-          marge: p.marge == null ? "1400" : String(p.marge),
+          marge: p.marge == null ? "" : String(p.marge),
           charges: p.charges, next: p.next || 1000
         };
       }
@@ -239,6 +250,12 @@ details summary { cursor: pointer; min-height: 44px; display: flex; align-items:
   function renderRows() {
     var host = $("rows");
     host.innerHTML = "";
+    if (!state.charges.length) {
+      var e = document.createElement("p");
+      e.className = "emptyrows";
+      e.textContent = "Aucune charge pour l’instant. Ajoutez-en ou importez une configuration.";
+      host.appendChild(e);
+    }
     state.charges.forEach(function (c) {
       var row = document.createElement("div");
       row.className = "row";
@@ -290,19 +307,102 @@ details summary { cursor: pointer; min-height: 44px; display: flex; align-items:
   resetBtn.addEventListener("click", function () {
     if (resetBtn.dataset.armed !== "1") {
       resetBtn.dataset.armed = "1";
-      resetBtn.textContent = "Confirmer le rétablissement";
+      resetBtn.textContent = "Confirmer : tout effacer";
       resetTimer = setTimeout(disarm, 4000);
       return;
     }
     disarm();
-    state.charges = defaultCharges(); state.next = 100;
+    state.charges = defaultCharges(); state.next = 100; state.marge = ""; elMarge.value = "";
     save(); renderRows(); renderResult();
   });
   function disarm() {
     clearTimeout(resetTimer);
     resetBtn.dataset.armed = "0";
-    resetBtn.textContent = "Rétablir la liste d’origine";
+    resetBtn.textContent = "Tout effacer";
   }
+
+  // ---- Partage et import par lien (la partie après # ne part jamais vers un serveur)
+  function encode(obj) {
+    var json = JSON.stringify(obj);
+    return btoa(unescape(encodeURIComponent(json))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  }
+  function decode(code) {
+    var b = code.replace(/-/g, "+").replace(/_/g, "/");
+    while (b.length % 4) b += "=";
+    var obj = JSON.parse(decodeURIComponent(escape(atob(b))));
+    if (!obj || !Array.isArray(obj.c)) throw new Error("format");
+    var list = obj.c.slice(0, 200).map(function (x) {
+      if (!Array.isArray(x)) throw new Error("format");
+      return [String(x[0] == null ? "" : x[0]).slice(0, 120), String(x[1] == null ? "" : x[1]).slice(0, 120)];
+    });
+    return { m: String(obj.m == null ? "" : obj.m).slice(0, 20), c: list };
+  }
+  function extractCode(text) {
+    text = String(text || "").trim();
+    var i = text.indexOf("#c=");
+    return i >= 0 ? text.slice(i + 3) : text.replace(/^#/, "");
+  }
+  function applyConfig(cfg) {
+    state.charges = cfg.c.map(function (x, i) { return { id: i + 1, label: x[0], expr: x[1] }; });
+    state.next = cfg.c.length + 100;
+    state.marge = cfg.m; elMarge.value = cfg.m;
+    save(); renderRows(); renderResult();
+  }
+  function buildLink() {
+    var payload = { m: state.marge, c: state.charges.map(function (c) { return [c.label, c.expr]; }) };
+    return location.href.split("#")[0] + "#c=" + encode(payload);
+  }
+
+  $("share").addEventListener("click", function () {
+    var link = buildLink();
+    var out = $("linkOut");
+    out.value = link;
+    $("linkWrap").hidden = false;
+    var st = $("shareStatus");
+    st.textContent = "";
+    if (navigator.share) {
+      navigator.share({ title: "Compte commun", url: link }).catch(function () {});
+    } else if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(link).then(function () { st.textContent = "Lien copié."; }, function () {
+        st.textContent = "Appuyez longuement sur le lien pour le copier.";
+      });
+    } else {
+      st.textContent = "Appuyez longuement sur le lien pour le copier.";
+    }
+  });
+  $("linkOut").addEventListener("focus", function (e) { e.target.select(); });
+
+  $("doImport").addEventListener("click", function () {
+    var st = $("importStatus");
+    try {
+      var cfg = decode(extractCode($("linkIn").value));
+      applyConfig(cfg);
+      $("linkIn").value = "";
+      st.textContent = cfg.c.length + " charge" + (cfg.c.length > 1 ? "s" : "") + " importée" + (cfg.c.length > 1 ? "s" : "") + ".";
+    } catch (e) {
+      st.textContent = "Ce lien n’a pas pu être lu. Vérifiez qu’il est complet.";
+    }
+  });
+
+  // Lien d’import ouvert directement : on demande confirmation avant de remplacer.
+  (function () {
+    var h = location.hash;
+    if (h.indexOf("#c=") !== 0) return;
+    var banner = $("importBanner");
+    try {
+      var cfg = decode(h.slice(3));
+      banner.hidden = false;
+      var n = cfg.c.length;
+      banner.innerHTML = "<p>Importer " + n + " charge" + (n > 1 ? "s" : "") + " ? Cela remplace la liste actuelle.</p>" +
+        '<div class="btns"><button class="btn primary" id="bOk" type="button">Importer</button><button class="btn" id="bNo" type="button">Ignorer</button></div>';
+      function clearHash() { try { history.replaceState(null, "", location.pathname + location.search); } catch (e) {} }
+      $("bOk").addEventListener("click", function () { applyConfig(cfg); banner.hidden = true; clearHash(); });
+      $("bNo").addEventListener("click", function () { banner.hidden = true; clearHash(); });
+    } catch (e) {
+      banner.hidden = false;
+      banner.textContent = "Le lien d’import n’a pas pu être lu.";
+    }
+  })();
 
   renderRows();
   renderResult();
